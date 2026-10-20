@@ -1,0 +1,43 @@
+
+name: VRChat Preflight Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vrchat-unity
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: VRChat SDK Check
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Unity project
+        uses: actions/checkout@v6
+
+      - name: Validate Unity project
+        shell: bash
+        run: |
+          test -d Assets
+          test -d Packages
+          test -f Packages/vpm-manifest.json
+          test -f ProjectSettings/ProjectVersion.txt
+          echo "Unity project found"
+
+      - name: Run VRCLI preflight
+        shell: bash
+        env:
+          VRCLI_USERNAME: ${{ secrets.VRCHAT_LOGIN }}
+        run: |
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+
+          vrcli check \
+            --project "$GITHUB_WORKSPACE" \
+            --platform StandaloneWindows64 \
+            --plain
