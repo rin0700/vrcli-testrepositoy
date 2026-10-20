@@ -18,8 +18,21 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      
+      - name: Setup Git LFS
+        shell: bash
+        run: |
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/homebrew/bin:$PATH"
+
+          if ! git lfs version > /dev/null 2>&1; then
+            brew install git-lfs
+          fi
+
       - name: Checkout Unity project
         uses: actions/checkout@v6
+        with:
+          lfs: true
 
       - name: Validate Unity project
         shell: bash
