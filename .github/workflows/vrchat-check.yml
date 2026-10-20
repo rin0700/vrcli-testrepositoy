@@ -30,6 +30,7 @@ jobs:
           test -f ProjectSettings/ProjectVersion.txt
           echo "Unity project found"
 
+      
       - name: Run VRCLI preflight
         shell: bash
         env:
@@ -37,7 +38,14 @@ jobs:
         run: |
           export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
 
+          # ログインユーザー名が設定されているか検証
+          if [ -z "${VRCLI_USERNAME:-}" ]; then
+            echo "::error::VRCHAT_LOGIN secret is missing or empty"
+            exit 1
+          fi
+
           vrcli check \
             --project "$GITHUB_WORKSPACE" \
             --platform StandaloneWindows64 \
             --plain
+
