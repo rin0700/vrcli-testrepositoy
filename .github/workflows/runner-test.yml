@@ -1,0 +1,52 @@
+
+name: VRChat Runner Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Mac mini
+    runs-on: [self-hosted, macOS, ARM64]
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Check macOS
+        shell: bash
+        run: |
+          sw_vers
+          uname -m
+          whoami
+
+      - name: Check VRCLI
+        shell: bash
+        run: |
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          command -v vrcli
+          vrcli --help
+
+      - name: Check VPM CLI
+        shell: bash
+        run: |
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          command -v vpm
+          vpm --help
+
+      - name: Check Unity Editor
+        shell: bash
+        run: |
+          UNITY="/Applications/Unity/Hub/Editor/2022.3.22f1/Unity.app/Contents/MacOS/Unity"
+
+          if [ -x "$UNITY" ]; then
+            echo "Unity 2022.3.22f1 found"
+          else
+            echo "::error::Unity Editor not found"
+            exit 1
+          fi
+
+      - name: Complete
+        run: echo "Mac mini environment check passed"
