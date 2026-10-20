@@ -1,0 +1,45 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_SphereCollider : Type_Collider
+    {
+        [System.NonSerialized]
+        private SphereCollider type;
+
+        public SharedVector3 Center = new SharedVector3();
+        public SharedFloat Radius = new SharedFloat();
+
+        public override void Setup(Object type)
+        {
+            base.Setup(type);
+            SphereCollider component = (SphereCollider)type;
+            Center.Setup(component.center);
+            Radius.Setup(component.radius);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            base.Upgrade(type, currentVersion);
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                Center.iOS = Center.Quest;
+                Radius.iOS = Radius.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            base.Process(type, buildTarget);
+            SphereCollider component = (SphereCollider)type;
+            component.center = Center.Get(buildTarget);
+            component.radius = Radius.Get(buildTarget);
+        }
+    }
+}
+#endif
+

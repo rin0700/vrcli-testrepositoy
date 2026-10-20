@@ -1,0 +1,62 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+using UnityEngine.UI;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_ReflectionProbe : Type_Behaviour
+    {
+        [System.NonSerialized]
+        private ReflectionProbe type;
+
+        public SharedReflectionProbeMode ReflectionProbeType = new SharedReflectionProbeMode();
+        public SharedTexture Cubemap = new SharedTexture();
+        public SharedInt Importance = new SharedInt();
+        public SharedFloat Intensity = new SharedFloat();
+        public SharedBool BoxProjection = new SharedBool();
+        public SharedReflectionProbeResolution Resolution = new SharedReflectionProbeResolution();
+
+        public override void Setup(Object type)
+        {
+            base.Setup(type);
+            ReflectionProbe component = (ReflectionProbe)type;
+            ReflectionProbeType.Setup(component.mode);
+            Cubemap.Setup(component.customBakedTexture);
+            Importance.Setup(component.importance);
+            Intensity.Setup(component.intensity);
+            BoxProjection.Setup(component.boxProjection);
+            Resolution.Setup((ReflectionProbeResolution)component.resolution);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            base.Upgrade(type, currentVersion);
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                ReflectionProbeType.iOS = ReflectionProbeType.Quest;
+                Cubemap.iOS = Cubemap.Quest;
+                Importance.iOS = Importance.Quest;
+                Intensity.iOS = Intensity.Quest;
+                BoxProjection.iOS = BoxProjection.Quest;
+                Resolution.iOS = Resolution.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            base.Process(type, buildTarget);
+            ReflectionProbe component = (ReflectionProbe)type;
+            component.mode = ReflectionProbeType.Get(buildTarget);
+            component.customBakedTexture = Cubemap.Get(buildTarget);
+            component.importance = Importance.Get(buildTarget);
+            component.intensity = Intensity.Get(buildTarget);
+            component.boxProjection = BoxProjection.Get(buildTarget);
+            component.resolution = (int)Resolution.Get(buildTarget);
+        }
+    }
+}
+#endif
+

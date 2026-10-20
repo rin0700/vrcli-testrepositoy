@@ -1,0 +1,38 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_MeshFilter : Type_Base
+    {
+        [System.NonSerialized]
+        private MeshFilter type;
+
+        public SharedMesh Mesh = new SharedMesh();
+
+        public override void Setup(Object type)
+        {
+            MeshFilter component = (MeshFilter)type;
+            Mesh.Setup(component.sharedMesh);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                Mesh.iOS = Mesh.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            MeshFilter component = (MeshFilter)type;
+            component.sharedMesh = Mesh.Get(buildTarget);
+        }
+    }
+}
+#endif
+

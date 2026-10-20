@@ -1,0 +1,38 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_Behaviour : Type_Base
+    {
+        [System.NonSerialized]
+        private Behaviour type;
+
+        public SharedBool Enabled = new SharedBool();
+
+        public override void Setup(Object type)
+        {
+            Behaviour component = (Behaviour)type;
+            Enabled.Setup(component.enabled);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                Enabled.iOS = Enabled.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            Behaviour component = (Behaviour)type;
+            component.enabled = Enabled.Get(buildTarget);
+        }
+    }
+}
+#endif
+

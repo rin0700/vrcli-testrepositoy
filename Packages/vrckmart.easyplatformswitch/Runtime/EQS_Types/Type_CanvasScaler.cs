@@ -1,0 +1,46 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+using UnityEngine.UI;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_CanvasScaler : Type_Behaviour
+    {
+        [System.NonSerialized]
+        private CanvasScaler type;
+
+        public SharedFloat ScaleFactor = new SharedFloat();
+        public SharedFloat ReferencePixelsPerUnit = new SharedFloat();
+
+        public override void Setup(Object type)
+        {
+            base.Setup(type);
+            CanvasScaler component = (CanvasScaler)type;
+            ScaleFactor.Setup(component.scaleFactor);
+            ReferencePixelsPerUnit.Setup(component.referencePixelsPerUnit);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            base.Upgrade(type, currentVersion);
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                ScaleFactor.iOS = ScaleFactor.Quest;
+                ReferencePixelsPerUnit.iOS = ReferencePixelsPerUnit.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            base.Process(type, buildTarget);
+            CanvasScaler component = (CanvasScaler)type;
+            component.scaleFactor = ScaleFactor.Get(buildTarget);
+            component.referencePixelsPerUnit = ReferencePixelsPerUnit.Get(buildTarget);
+        }
+    }
+}
+#endif
+

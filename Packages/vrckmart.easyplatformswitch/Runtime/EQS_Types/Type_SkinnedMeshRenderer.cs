@@ -1,0 +1,45 @@
+﻿#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using EasyPlatformSwitch.Fields;
+
+namespace EasyPlatformSwitch.Types
+{
+    [AddComponentMenu("")]
+    public class Type_SkinnedMeshRenderer : Type_Renderer
+    {
+        [System.NonSerialized]
+        private SkinnedMeshRenderer type;
+
+        public SharedMesh Mesh = new SharedMesh();
+        public SharedBool UpdateWhenOffscreen = new SharedBool();
+
+        public override void Setup(Object type)
+        {
+            base.Setup(type);
+            SkinnedMeshRenderer component = (SkinnedMeshRenderer)type;
+            Mesh.Setup(component.sharedMesh);
+            UpdateWhenOffscreen.Setup(component.updateWhenOffscreen);
+        }
+
+        public override void Upgrade(Object type, int currentVersion)
+        {
+            base.Upgrade(type, currentVersion);
+            if (currentVersion < EQS_Data.UpdateAddIOS)
+            {
+                Mesh.iOS = Mesh.Quest;
+                UpdateWhenOffscreen.iOS = UpdateWhenOffscreen.Quest;
+            }
+        }
+
+        public override void Process(Object type, BuildTarget buildTarget)
+        {
+            base.Process(type, buildTarget);
+            SkinnedMeshRenderer component = (SkinnedMeshRenderer)type;
+            component.sharedMesh = Mesh.Get(buildTarget);
+            component.updateWhenOffscreen = UpdateWhenOffscreen.Get(buildTarget);
+        }
+    }
+}
+#endif
+
