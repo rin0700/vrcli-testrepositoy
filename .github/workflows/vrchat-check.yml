@@ -34,6 +34,40 @@ jobs:
         with:
           lfs: true
 
+      
+      - name: Restore and verify Git LFS
+        shell: bash
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+
+          # LFSファイルを作業フォルダに復元
+          git lfs pull
+
+          # SDKに必要なDLLの実体を確認
+          DLLS=(
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/DOTween/DOTween.dll"
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCSDKBase.dll"
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCCore-Editor.dll"
+          )
+
+          for DLL in "${DLLS[@]}"; do
+            if [ ! -f "$DLL" ]; then
+              echo "::error::Missing DLL: $DLL"
+              exit 1
+            fi
+
+            if head -c 80 "$DLL" | grep -aq '^version https://git-lfs.github.com/spec/v1'; then
+              echo "::error::Unresolved LFS pointer: $DLL"
+              exit 1
+            fi
+
+            echo "OK: $DLL"
+            ls -lh "$DLL"
+          done
+
+          echo "Git LFS verification passed"
+
+
       - name: Validate Unity project
         shell: bash
         run: |
