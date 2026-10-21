@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.3322065, g: 0.3627174, b: 0.46474278, a: 1}
+  m_IndirectSpecularColor: {r: 0.33220646, g: 0.36271727, b: 0.46474233, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -123,6 +123,119 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &52376794
+GameObject:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 52376798}
+  - component: {fileID: 52376797}
+  - component: {fileID: 52376796}
+  - component: {fileID: 52376795}
+  m_Layer: 0
+  m_Name: EQS_DATA
+  m_TagString: EditorOnly
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &52376795
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52376794}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80acf45703dd3f0458b5c15f1d8a841f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Active:
+    PC: 0
+    Quest: 0
+    iOS: 0
+  Tag:
+    PC: Untagged
+    Quest: Untagged
+    iOS: Untagged
+  Layer:
+    PC: 0
+    Quest: 0
+    iOS: 0
+  StaticEditorFlags:
+    PC: 0
+    Quest: 0
+    iOS: 0
+--- !u!114 &52376796
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52376794}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80acf45703dd3f0458b5c15f1d8a841f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Active:
+    PC: 0
+    Quest: 1
+    iOS: 1
+  Tag:
+    PC: Untagged
+    Quest: Untagged
+    iOS: Untagged
+  Layer:
+    PC: 0
+    Quest: 0
+    iOS: 0
+  StaticEditorFlags:
+    PC: 0
+    Quest: 0
+    iOS: 0
+--- !u!114 &52376797
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52376794}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee80084b7ceddd048b648d3acb99f068, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Objects:
+  - Target: {fileID: 544589505}
+    Type: {fileID: 52376796}
+    Foldout: 1
+  - Target: {fileID: 349368501}
+    Type: {fileID: 52376795}
+    Foldout: 1
+  version: 141
+  buildInfo:
+    CachedBuildTarget: 0
+    NewBuildTarget: 0
+--- !u!4 &52376798
+Transform:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52376794}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &349368501
 GameObject:
   m_ObjectHideFlags: 0
@@ -829,7 +942,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   launchedFromSDKPipeline: 0
   completedSDKPipeline: 0
-  blueprintId: wrld_4c9f6f03-0f16-48fb-965a-36a98a8814b3
+  blueprintId: wrld_f7d555a0-c6f2-40d0-97da-895ac0db7721
   contentType: 1
   assetBundleUnityVersion: 
   fallbackStatus: 0
@@ -1109,3 +1222,4 @@ SceneRoots:
   - {fileID: 1446899326}
   - {fileID: 544589509}
   - {fileID: 349368505}
+  - {fileID: 52376798}

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Empty
   m_EditorClassIdentifier: 
   serializedUdonProgramAsset: {fileID: 11400000, guid: b1aeef84bc7842742ae52c1083ce1ad0, type: 2}
-  udonAssembly: ".data_start\r\n\r\n    \r\n\r\n.data_end\r\n\r\n.code_start\r\n\r\n\r\n.code_end\r\n"
+  udonAssembly: ".data_start\n\n    \n\n.data_end\n\n.code_start\n\n\n.code_end\n"
   assemblyError: 
   graphData:
     name: 
