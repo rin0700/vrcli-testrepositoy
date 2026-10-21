@@ -1,0 +1,139 @@
+name: VRChat Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DEPLOY to upload the Windows world to VRChat"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vrchat-unity
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Upload VRChat World (Windows)
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 90
+    env:
+      EXPECTED_BLUEPRINT: wrld_f7d555a0-c6f2-40d0-97da-895ac0db7721
+      WORLD_SCENE: Assets/_Rin/Scene/VRCli_Test.unity
+      VRCLI_USERNAME: ${{ secrets.VRCHAT_LOGIN }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+
+    steps:
+      - name: Validate manual deployment request
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Deployments are only permitted from the main branch."
+            exit 1
+          fi
+          if [[ "$CONFIRMATION" != "DEPLOY" ]]; then
+            echo "::error::Enter DEPLOY in the confirmation field."
+            exit 1
+          fi
+          if [[ -z "${VRCLI_USERNAME:-}" ]]; then
+            echo "::error::Set the VRCHAT_LOGIN repository secret to the VRChat owner account."
+            exit 1
+          fi
+
+      - name: Setup Git LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/homebrew/bin:$PATH"
+          if ! git lfs version > /dev/null 2>&1; then
+            brew install git-lfs
+          fi
+
+      - name: Checkout Unity project (preserve Library)
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+          clean: false
+
+      - name: Restore and verify Git LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs pull
+          DLLS=(
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/DOTween/DOTween.dll"
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCSDKBase.dll"
+            "Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCCore-Editor.dll"
+          )
+          for DLL in "${DLLS[@]}"; do
+            if [[ ! -f "$DLL" ]]; then
+              echo "::error::Missing DLL: $DLL"
+              exit 1
+            fi
+            if head -c 80 "$DLL" | grep -aq '^version https://git-lfs.github.com/spec/v1'; then
+              echo "::error::Unresolved Git LFS pointer: $DLL"
+              exit 1
+            fi
+            echo "Verified: $DLL"
+          done
+
+      - name: Validate target project and Blueprint ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d Assets
+          test -d Packages
+          test -f Packages/vpm-manifest.json
+          test -f ProjectSettings/ProjectVersion.txt
+          test -f "$WORLD_SCENE"
+          actual_blueprint="$(sed -n 's/^[[:space:]]*blueprintId: *//p' "$WORLD_SCENE" | sort -u)"
+          if [[ "$actual_blueprint" != "$EXPECTED_BLUEPRINT" ]]; then
+            echo "::error::Unexpected Blueprint ID in $WORLD_SCENE: $actual_blueprint"
+            echo "::error::Expected: $EXPECTED_BLUEPRINT"
+            exit 1
+          fi
+          echo "Deploy target: $EXPECTED_BLUEPRINT"
+
+      - name: VRCLI preflight check
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          vrcli check \
+            --login "$VRCLI_USERNAME" \
+            --project "$GITHUB_WORKSPACE" \
+            --scene "$WORLD_SCENE" \
+            --blueprint "$EXPECTED_BLUEPRINT" \
+            --platform StandaloneWindows64 \
+            --plain
+
+      - name: Build and upload world
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          vrcli deploy \
+            --login "$VRCLI_USERNAME" \
+            --project "$GITHUB_WORKSPACE" \
+            --scene "$WORLD_SCENE" \
+            --blueprint "$EXPECTED_BLUEPRINT" \
+            --platform StandaloneWindows64 \
+            --yes \
+            --plain
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          {
+            echo "## VRChat world deployment"
+            echo ""
+            echo "- World: https://vrchat.com/home/world/$EXPECTED_BLUEPRINT"
+            echo "- Platform: StandaloneWindows64"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Runner: $RUNNER_NAME"
+          } >> "$GITHUB_STEP_SUMMARY"
