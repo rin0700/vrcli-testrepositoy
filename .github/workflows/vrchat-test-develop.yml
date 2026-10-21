@@ -1,0 +1,123 @@
+name: VRChat - Develop Test Upload
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      test_world_id:
+        description: 'Optional test World ID (blank = VRC_TEST_WORLD_ID)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.ref == 'refs/heads/develop'
+    name: Test world preflight and upload
+    runs-on: [self-hosted, macOS, ARM64]
+    environment: vrchat-test
+    timeout-minutes: 120
+    concurrency:
+      group: vrchat-unity
+      cancel-in-progress: false
+    env:
+      WORLD_SCENE: Assets/_Rin/Scene/VRCli_Test.unity
+      TEST_DEFAULT: ${{ vars.VRC_TEST_WORLD_ID }}
+      TEST_OVERRIDE: ${{ inputs.test_world_id }}
+      TEST_ALLOWLIST: ${{ vars.VRC_TEST_ALLOWED_IDS }}
+      OPERATORS: ${{ vars.VRC_DEPLOY_OPERATORS }}
+      ACTOR: ${{ github.actor }}
+      EVENT_NAME: ${{ github.event_name }}
+      VRCLI_USERNAME: ${{ secrets.VRCHAT_LOGIN }}
+
+    steps:
+      - name: Validate target and manual operator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_CHECK'
+          import os, re
+          valid = re.compile(r'wrld_[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
+          entries = lambda key: {v.lower() for v in re.split(r'[\s,]+', os.getenv(key, '')) if v.strip()}
+          world = (os.getenv('TEST_OVERRIDE', '').strip() or os.getenv('TEST_DEFAULT', '').strip()).lower()
+          if not valid.fullmatch(world) or world not in entries('TEST_ALLOWLIST'):
+              raise SystemExit('::error::Test Blueprint ID missing, invalid, or not allowlisted')
+          if os.getenv('EVENT_NAME') == 'workflow_dispatch' and os.getenv('ACTOR', '').lower() not in entries('OPERATORS'):
+              raise SystemExit('::error::Manual test upload operator is not allowlisted')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as out:
+              out.write('WORLD_ID=' + world + '\n')
+          PY_CHECK
+          [[ -n "${VRCLI_USERNAME:-}" ]] || { echo '::error::Missing VRCHAT_LOGIN'; exit 1; }
+
+      - name: Setup LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo /opt/homebrew/bin >> "$GITHUB_PATH"
+          export PATH="/opt/homebrew/bin:$PATH"
+          git lfs version >/dev/null 2>&1 || brew install git-lfs
+
+      - name: Checkout exact develop SHA, retain Unity Library
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+          clean: false
+
+      - name: Verify Unity project and LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs pull
+          test -f "$WORLD_SCENE"
+          test -f Packages/vpm-manifest.json
+          test -f ProjectSettings/ProjectVersion.txt
+          for asset in \
+            Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/DOTween/DOTween.dll \
+            Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCSDKBase.dll \
+            Packages/com.vrchat.base/Runtime/VRCSDK/Plugins/VRCCore-Editor.dll; do
+            test -f "$asset" || { echo "::error::Missing $asset"; exit 1; }
+            if head -c 80 "$asset" | grep -aq '^version https://git-lfs.github.com/spec/v1'; then
+              echo "::error::LFS pointer not restored: $asset"
+              exit 1
+            fi
+          done
+
+      - name: Preflight test world
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          vrcli check \
+            --login "$VRCLI_USERNAME" \
+            --project "$GITHUB_WORKSPACE" \
+            --scene "$WORLD_SCENE" \
+            --blueprint "$WORLD_ID" \
+            --platform StandaloneWindows64 \
+            --plain
+
+      - name: Upload test world
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/opt/homebrew/bin:$HOME/.dotnet/tools:$PATH"
+          vrcli deploy \
+            --login "$VRCLI_USERNAME" \
+            --project "$GITHUB_WORKSPACE" \
+            --scene "$WORLD_SCENE" \
+            --blueprint "$WORLD_ID" \
+            --platform StandaloneWindows64 \
+            --yes --plain
+
+      - name: Report tested commit and world
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo '## Develop test upload successful'
+            echo "- Test SHA: $GITHUB_SHA"
+            echo "- Test World: https://vrchat.com/home/world/$WORLD_ID"
+            echo '- Platform: StandaloneWindows64'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,62 @@
+name: VRChat - Release PR Test Gate
+
+on:
+  pull_request:
+    branches: [release]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  test-evidence:
+    name: Verify tested develop commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    steps:
+      - name: Check PR branch and successful test deployment
+        run: |
+          set -euo pipefail
+          [[ "$PR_HEAD_REF" == 'develop' ]] || { echo '::error::PR source must be develop'; exit 1; }
+          [[ "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || { echo '::error::Cross-repository PR not permitted'; exit 1; }
+
+      - name: Checkout trusted CI controller from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Confirm develop SHA was actually uploaded
+        run: python3 scripts/vrchat_ci.py pr-gate
+
+      - name: Compare PR merge result with tested Unity source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # PR could be different after merging with release. Do not approve untested Unity changes.
+          git fetch origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/origin/vrchat-pr-merge"
+          git cat-file -e "${PR_HEAD_SHA}^{commit}"
+          if ! git diff --quiet "$PR_HEAD_SHA" refs/remotes/origin/vrchat-pr-merge -- Assets Packages ProjectSettings; then
+            echo '::error::Merge result contains Unity source different from tested develop SHA.'
+            exit 1
+          fi
+          echo 'PR merge Unity source matches the test-uploaded develop SHA.'
+
+      - name: PR reviewer information
+        run: |
+          {
+            echo '## Release PR test gate passed'
+            echo "- Test commit: $PR_HEAD_SHA"
+            echo "- Test runs: https://github.com/$GITHUB_REPOSITORY/actions/workflows/vrchat-test-develop.yml"
+            echo '- A reviewer must inspect the actual test world and approve the PR.'
+            echo '- Merge still requires branch protection rules to enforce this check and approvals.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,31 @@
+name: VRChat - Production Reservation Scheduler
+
+on:
+  schedule:
+    - cron: '2/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+concurrency:
+  group: vrchat-production-reservations
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted controller from default branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Dispatch due signed reservations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VRC_QUEUE_SIGNING_KEY: ${{ secrets.VRC_QUEUE_SIGNING_KEY }}
+        run: python3 scripts/vrchat_ci.py poll

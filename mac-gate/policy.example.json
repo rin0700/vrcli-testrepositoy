@@ -1,0 +1,11 @@
+{
+  "repository": "rin0700/vrcli-testrepositoy",
+  "repository_id": 123456789,
+  "allowed_actor_ids": [12345678],
+  "test_world_ids": ["wrld_11111111-1111-1111-1111-111111111111"],
+  "production_world_ids": ["wrld_22222222-2222-2222-2222-222222222222"],
+  "worktree": "/Users/vrchatprod/world-production",
+  "remote_url": "git@github.com:rin0700/vrcli-testrepositoy.git",
+  "vrcli_account": "Gugenka",
+  "oidc_audience": "urn:vrchat:prod:rin0700/vrcli-testrepositoy"
+}

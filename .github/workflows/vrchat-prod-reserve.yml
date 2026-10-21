@@ -1,0 +1,61 @@
+name: VRChat - Reserve Production Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      production_world_id:
+        description: 'Production world ID (wrld_UUID), must be allowlisted'
+        required: true
+        type: string
+      scheduled_at_jst:
+        description: 'NOW or YYYY-MM-DDTHH:MM (Japan time)'
+        required: true
+        default: 'NOW'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: write
+
+concurrency:
+  group: vrchat-production-reservations
+  cancel-in-progress: false
+
+jobs:
+  reserve:
+    name: Verify operator, PR approval, tested sources, and reserve
+    if: github.ref == 'refs/heads/release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VRC_DEPLOY_OPERATORS: ${{ vars.VRC_DEPLOY_OPERATORS }}
+      VRC_PROD_ALLOWED_IDS: ${{ vars.VRC_PROD_ALLOWED_IDS }}
+      VRC_TEST_ALLOWED_IDS: ${{ vars.VRC_TEST_ALLOWED_IDS }}
+      VRC_QUEUE_SIGNING_KEY: ${{ secrets.VRC_QUEUE_SIGNING_KEY }}
+      PRODUCTION_WORLD_ID: ${{ inputs.production_world_id }}
+      SCHEDULED_AT_JST: ${{ inputs.scheduled_at_jst }}
+
+    steps:
+      - name: Checkout trusted CI controller
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Register signed production reservation
+        id: reserve
+        run: python3 scripts/vrchat_ci.py reserve
+
+      - name: Reservation summary
+        run: |
+          {
+            echo '## Production reservation registered'
+            echo "- Issue: #${{ steps.reserve.outputs.reservation_issue }}"
+            echo "- Production target: $PRODUCTION_WORLD_ID"
+            echo "- Pinned release SHA: $GITHUB_SHA"
+            echo "- Scheduled for: $SCHEDULED_AT_JST (JST)"
+            echo '- Execution happens at or after the specified time, not exactly on time.'
+          } >> "$GITHUB_STEP_SUMMARY"
